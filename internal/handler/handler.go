@@ -161,7 +161,7 @@ func Middleware(log *slog.Logger) func(http.Handler) http.Handler {
 			w.Header().Set("Permissions-Policy", "interest-cohort=()")
 			// Restrict script/style to same-origin; deny framing; no external resources.
 			w.Header().Set("Content-Security-Policy",
-				"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-ancestors 'none';")
+				"default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';")
 
 			defer func() {
 				if rec := recover(); rec != nil {

@@ -4,16 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{block "title" .}}Disapyr — One-Time Secret Sharing{{end}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
   <script src="/static/js/crypto.js" defer></script>
+  <script src="/static/js/effects.js" defer></script>
 </head>
 <body>
   <header class="site-header">
     <a href="/" class="logo">
-      <span class="logo-icon">🔒</span>
+      <svg class="logo-mark" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="3" y="11" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="1.75"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+        <circle cx="12" cy="17" r="1.5" fill="currentColor"/>
+      </svg>
       <span class="logo-text">disapyr</span>
     </a>
-    <p class="logo-tagline">Zero-knowledge one-time secret sharing</p>
+    <div class="header-badge">
+      <span class="badge-pulse"></span>
+      zero&#8209;knowledge
+    </div>
   </header>
 
   <main class="main-content">
@@ -21,8 +32,15 @@
   </main>
 
   <footer class="site-footer">
-    <p>Secrets are encrypted in your browser. The server never sees your key.</p>
-    <p>Each secret can only be viewed <strong>once</strong> before it is permanently destroyed.</p>
+    <div class="footer-inner">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <rect x="3" y="11" width="18" height="12" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <span>Encrypted in your browser. The server never sees your key.</span>
+      <span class="footer-sep">&middot;</span>
+      <span>Each secret is viewable <strong>once</strong> then permanently destroyed.</span>
+    </div>
   </footer>
 </body>
 </html>
