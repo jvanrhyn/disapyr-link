@@ -464,6 +464,52 @@ body::before {
 }
 
 /* ─── Revealed secret text ───────────────────────────────────────────────── */
+.secret-text-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.75rem 0.45rem 1rem;
+  background: rgba(0, 171, 189, 0.05);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.secret-text-label {
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+}
+
+.btn-copy-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.55rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font);
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-copy-mini:hover {
+  background: rgba(0, 171, 189, 0.08);
+  color: var(--text);
+  border-color: var(--border-hi);
+}
+.btn-copy-mini.copied {
+  color: var(--c2);
+  border-color: rgba(0, 171, 189, 0.5);
+  background: rgba(0, 171, 189, 0.08);
+}
+
 .secret-text {
   background: rgba(0, 0, 0, 0.32);
   border: 1px solid var(--border);
@@ -484,6 +530,20 @@ body::before {
 .secret-text::-webkit-scrollbar { width: 4px; }
 .secret-text::-webkit-scrollbar-track { background: transparent; }
 .secret-text::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 4px; }
+
+/* When secret-text is paired with the header strip, flatten the top corners */
+.secret-text-below-header {
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  border-top: none;
+}
+
+/* ─── Drag-active state for file drop zone ───────────────────────────────── */
+.file-label.drag-active {
+  border-color: var(--c2);
+  background: rgba(0, 171, 189, 0.08);
+  color: var(--text);
+  box-shadow: 0 0 0 3px rgba(0, 171, 189, 0.12);
+}
 
 /* ─── Destroyed notice ───────────────────────────────────────────────────── */
 .destroyed-notice {

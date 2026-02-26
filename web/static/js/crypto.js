@@ -157,9 +157,12 @@ function setText(id, text) {
 let _decryptedBuffer = null;
 let _decryptedFilename = '';
 let _decryptedContentType = '';
+let _droppedFile = null;      // fallback for browsers where DataTransfer file assignment fails
+let _dragDropInitialized = false;
 
 function switchMode(mode) {
   if (mode === 'text') {
+    _droppedFile = null;
     show('input-text'); hide('input-file');
     document.getElementById('btn-text').classList.add('active');
     document.getElementById('btn-file').classList.remove('active');
@@ -203,6 +206,7 @@ function resetForm() {
   const fi = document.getElementById('secret-file');
   if (fi) fi.value = '';
   setText('file-name-display', 'Click to choose a file or drag & drop');
+  _droppedFile = null;
   hide('form-error');
   switchMode('text');
 }
@@ -214,13 +218,40 @@ async function copyLink() {
     await navigator.clipboard.writeText(link);
     const btn = document.getElementById('copy-btn');
     if (btn) {
-      btn.textContent = 'Copied!';
+      const label = document.getElementById('copy-label');
+      if (label) label.textContent = 'Copied!';
       btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      setTimeout(() => {
+        if (label) label.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
     }
   } catch {
-    // Fallback for browsers without clipboard API
     document.getElementById('secret-link')?.select();
+    document.execCommand('copy');
+  }
+}
+
+async function copySecret() {
+  const pre = document.getElementById('revealed-text');
+  if (!pre) return;
+  try {
+    await navigator.clipboard.writeText(pre.textContent);
+    const btn = document.getElementById('copy-secret-btn');
+    if (btn) {
+      const label = btn.querySelector('.copy-secret-label');
+      if (label) label.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        if (label) label.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+  } catch {
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = window.getSelection();
+    if (sel) { sel.removeAllRanges(); sel.addRange(range); }
     document.execCommand('copy');
   }
 }
@@ -242,8 +273,8 @@ function initCreateForm() {
 
     const isFileMode = !document.getElementById('input-file')?.classList.contains('hidden');
 
-    if (isFileMode && fileInput?.files[0]) {
-      const file = fileInput.files[0];
+    if (isFileMode && (fileInput?.files[0] || _droppedFile)) {
+      const file = fileInput?.files[0] || _droppedFile;
       buffer = await file.arrayBuffer();
       contentType = file.type || 'application/octet-stream';
       filename = file.name;
@@ -288,6 +319,7 @@ function initCreateForm() {
       console.error('create error:', err);
       showCreateError('Encryption failed. Please try again.');
     } finally {
+      _droppedFile = null;
       setSubmitLoading(false);
     }
   });
@@ -410,6 +442,55 @@ function initCreatePageEvents() {
   document.getElementById('secret-file')?.addEventListener('change', function () { updateFileName(this); });
   document.getElementById('copy-btn')?.addEventListener('click', copyLink);
   document.getElementById('reset-btn')?.addEventListener('click', resetForm);
+  initDragAndDrop();
+}
+
+function initDragAndDrop() {
+  if (_dragDropInitialized) return;
+  _dragDropInitialized = true;
+
+  const dropZone = document.getElementById('input-file');
+  const fileLabel = dropZone?.querySelector('.file-label');
+  const fileInput = document.getElementById('secret-file');
+  if (!dropZone || !fileInput) return;
+
+  // Prevent browser from navigating to dropped files, but only for file drags
+  // (scoped to Files type to avoid breaking text-drag into other inputs)
+  window.addEventListener('dragover', (e) => {
+    if (e.dataTransfer?.types?.includes('Files')) e.preventDefault();
+  }, false);
+  window.addEventListener('drop', (e) => {
+    if (e.dataTransfer?.types?.includes('Files')) e.preventDefault();
+  }, false);
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    fileLabel?.classList.add('drag-active');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    fileLabel?.classList.remove('drag-active');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    fileLabel?.classList.remove('drag-active');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+      updateFileName(fileInput);
+    } catch {
+      // DataTransfer file assignment not supported — store for submit fallback
+      // and update display directly since fileInput.files is still empty
+      _droppedFile = file;
+      const display = document.getElementById('file-name-display');
+      if (display) display.textContent = file.name;
+    }
+  });
 }
 
 /* ── Retrieve page event wiring ───────────────────────────────────────────── */
@@ -417,4 +498,5 @@ function initCreatePageEvents() {
 function initRetrievePageEvents() {
   document.getElementById('reveal-btn')?.addEventListener('click', revealSecret);
   document.getElementById('download-btn')?.addEventListener('click', downloadFile);
+  document.getElementById('copy-secret-btn')?.addEventListener('click', copySecret);
 }
