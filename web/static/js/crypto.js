@@ -226,6 +226,7 @@ async function copyLink() {
 }
 
 function initCreateForm() {
+  initCreatePageEvents();
   const form = document.getElementById('secret-form');
   if (!form) return;
 
@@ -384,6 +385,7 @@ async function revealSecret() {
 }
 
 function initRetrievePage() {
+  initRetrievePageEvents();
   const page = document.getElementById('secret-page');
   if (!page) return;
 
@@ -399,3 +401,20 @@ document.addEventListener('DOMContentLoaded', () => {
   initCreateForm();
   initRetrievePage();
 });
+
+/* ── Create page event wiring ─────────────────────────────────────────────── */
+
+function initCreatePageEvents() {
+  document.getElementById('btn-text')?.addEventListener('click', () => switchMode('text'));
+  document.getElementById('btn-file')?.addEventListener('click', () => switchMode('file'));
+  document.getElementById('secret-file')?.addEventListener('change', function () { updateFileName(this); });
+  document.getElementById('copy-btn')?.addEventListener('click', copyLink);
+  document.getElementById('reset-btn')?.addEventListener('click', resetForm);
+}
+
+/* ── Retrieve page event wiring ───────────────────────────────────────────── */
+
+function initRetrievePageEvents() {
+  document.getElementById('reveal-btn')?.addEventListener('click', revealSecret);
+  document.getElementById('download-btn')?.addEventListener('click', downloadFile);
+}
