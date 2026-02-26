@@ -67,7 +67,10 @@ func (h *Handler) ServeIndex(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	h.render(w, "index", nil)
+	h.render(w, "index", map[string]any{
+		"MaxFileBytes":  h.maxBytes,
+		"MaxFileSizeMB": h.maxBytes / (1024 * 1024),
+	})
 }
 
 // CreateSecret handles POST / — accepts an encrypted payload and returns the retrieval token.

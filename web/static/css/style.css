@@ -299,6 +299,13 @@ body::before {
   background: rgba(0, 171, 189, 0.05);
   color: var(--text);
 }
+
+.file-zone-hint {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--text-3);
+  white-space: nowrap;
+}
 .file-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 
 /* ─── Form row ───────────────────────────────────────────────────────────── */

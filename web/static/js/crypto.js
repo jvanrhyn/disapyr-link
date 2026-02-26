@@ -137,6 +137,54 @@ function unpackSecret(buffer) {
   };
 }
 
+/* ── File safety ──────────────────────────────────────────────────────────── */
+
+/**
+ * Hard-blocked file extensions. These are executable/installer types that
+ * have no legitimate reason to be shared via a secret-sharing service and
+ * pose a risk to recipients. Source code (.js, .py, etc.) is intentionally
+ * NOT blocked — sharing code snippets is a valid use case.
+ */
+const BLOCKED_EXTENSIONS = new Set([
+  // Windows executables & installers
+  'exe', 'msi', 'bat', 'cmd', 'com', 'pif', 'scr',
+  // Windows scripts
+  'vbs', 'vbe', 'wsh', 'wsf', 'ps1', 'ps2', 'ps1xml', 'ps2xml', 'psc1', 'psc2',
+  // macOS executables & installers
+  'app', 'dmg', 'pkg', 'command',
+  // Unix/Linux executables
+  'sh', 'run',
+  // Java executables
+  'jar',
+]);
+
+/**
+ * Validate a File object against the blocklist and size limit.
+ * Returns an error string if invalid, null if OK.
+ */
+function validateFileInput(file) {
+  if (!file) return null;
+
+  const ext = (file.name.includes('.')
+    ? file.name.split('.').pop()
+    : ''
+  ).toLowerCase();
+
+  if (ext && BLOCKED_EXTENSIONS.has(ext)) {
+    return `Files of type .${ext} cannot be shared — this file type is blocked for security reasons.`;
+  }
+
+  const form = document.getElementById('secret-form');
+  const maxBytes = parseInt(form?.dataset?.maxBytes || String(10 * 1024 * 1024), 10);
+  if (file.size > maxBytes) {
+    const mb = Math.round(maxBytes / (1024 * 1024));
+    return `File is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed size is ${mb} MB.`;
+  }
+
+  return null;
+}
+
+
 function show(id) {
   const el = document.getElementById(id);
   if (el) el.classList.remove('hidden');
@@ -175,9 +223,18 @@ function switchMode(mode) {
 
 function updateFileName(input) {
   const display = document.getElementById('file-name-display');
-  if (display && input.files[0]) {
-    display.textContent = input.files[0].name;
+  if (!display || !input.files[0]) return;
+  const file = input.files[0];
+  const err = validateFileInput(file);
+  if (err) {
+    display.textContent = 'Click to choose a file or drag & drop';
+    input.value = '';
+    _droppedFile = null;
+    showCreateError(err);
+    return;
   }
+  hide('form-error');
+  display.textContent = file.name;
 }
 
 function showCreateError(msg) {
@@ -275,6 +332,11 @@ function initCreateForm() {
 
     if (isFileMode && (fileInput?.files[0] || _droppedFile)) {
       const file = fileInput?.files[0] || _droppedFile;
+      const fileErr = validateFileInput(file);
+      if (fileErr) {
+        showCreateError(fileErr);
+        return;
+      }
       buffer = await file.arrayBuffer();
       contentType = file.type || 'application/octet-stream';
       filename = file.name;
@@ -478,6 +540,11 @@ function initDragAndDrop() {
     fileLabel?.classList.remove('drag-active');
     const file = e.dataTransfer.files[0];
     if (!file) return;
+    const err = validateFileInput(file);
+    if (err) {
+      showCreateError(err);
+      return;
+    }
     try {
       const dt = new DataTransfer();
       dt.items.add(file);
