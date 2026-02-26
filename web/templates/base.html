@@ -1,0 +1,30 @@
+{{define "base"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{block "title" .}}Disapyr — One-Time Secret Sharing{{end}}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="/static/js/htmx.min.js" defer></script>
+  <script src="/static/js/crypto.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="logo">
+      <span class="logo-icon">🔒</span>
+      <span class="logo-text">disapyr</span>
+    </a>
+    <p class="logo-tagline">Zero-knowledge one-time secret sharing</p>
+  </header>
+
+  <main class="main-content">
+    {{block "content" .}}{{end}}
+  </main>
+
+  <footer class="site-footer">
+    <p>Secrets are encrypted in your browser. The server never sees your key.</p>
+    <p>Each secret can only be viewed <strong>once</strong> before it is permanently destroyed.</p>
+  </footer>
+</body>
+</html>
+{{end}}

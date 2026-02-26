@@ -1,0 +1,72 @@
+{{template "base" .}}
+
+{{define "title"}}Reveal Secret — Disapyr{{end}}
+
+{{define "content"}}
+<div id="secret-page" data-token="{{.Token}}">
+
+  <!-- Initial state: warning + reveal button -->
+  <div class="card" id="reveal-panel">
+    <div class="card-header">
+      <div class="secret-icon">🔐</div>
+      <h1>A secret has been shared with you</h1>
+      <p class="subtitle">This message is encrypted and can only be viewed <strong>once</strong>.</p>
+    </div>
+
+    <div class="warning-banner">
+      <span class="warning-icon">⚠️</span>
+      Once you reveal this secret, it is <strong>permanently destroyed</strong>. Make sure you are ready.
+    </div>
+
+    <div id="reveal-error" class="error-message hidden" role="alert"></div>
+
+    <button type="button" class="btn btn-primary btn-full" id="reveal-btn" onclick="revealSecret()">
+      <span id="reveal-label">Reveal Secret</span>
+      <span id="reveal-spinner" class="spinner hidden" aria-hidden="true"></span>
+    </button>
+  </div>
+
+  <!-- Revealed text state -->
+  <div class="card hidden" id="text-panel" aria-live="polite">
+    <div class="card-header">
+      <div class="success-icon">🔓</div>
+      <h2>Decrypted secret</h2>
+    </div>
+    <pre id="revealed-text" class="secret-text"></pre>
+    <div class="destroyed-notice">
+      <span>🗑️</span> This secret has been permanently destroyed from our servers.
+    </div>
+    <a href="/" class="btn btn-secondary btn-full">Share a new secret</a>
+  </div>
+
+  <!-- Revealed file state -->
+  <div class="card hidden" id="file-panel" aria-live="polite">
+    <div class="card-header">
+      <div class="success-icon">🔓</div>
+      <h2>Decrypted file</h2>
+    </div>
+    <div class="file-download-area">
+      <p id="file-info" class="file-info"></p>
+      <button type="button" class="btn btn-primary" id="download-btn" onclick="downloadFile()">
+        ⬇️ Download File
+      </button>
+    </div>
+    <div class="destroyed-notice">
+      <span>🗑️</span> This secret has been permanently destroyed from our servers.
+    </div>
+    <a href="/" class="btn btn-secondary btn-full">Share a new secret</a>
+  </div>
+
+  <!-- Already consumed / not found state -->
+  <div class="card hidden" id="gone-panel" aria-live="polite">
+    <div class="card-header">
+      <div class="gone-icon">🕳️</div>
+      <h2>Secret not found</h2>
+    </div>
+    <p class="subtitle">This secret has already been viewed, has expired, or the link is invalid.</p>
+    <p>For security, each secret can only be retrieved once and is permanently deleted after the first access.</p>
+    <a href="/" class="btn btn-primary btn-full">Share a new secret</a>
+  </div>
+
+</div>
+{{end}}

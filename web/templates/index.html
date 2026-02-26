@@ -1,0 +1,85 @@
+{{template "base" .}}
+
+{{define "title"}}Share a Secret — Disapyr{{end}}
+
+{{define "content"}}
+<div class="card" id="create-panel">
+  <div class="card-header">
+    <h1>Share a secret</h1>
+    <p class="subtitle">Your secret is encrypted in your browser before leaving your device.</p>
+  </div>
+
+  <form id="secret-form" novalidate>
+    <div class="input-toggle" role="group" aria-label="Secret type">
+      <button type="button" id="btn-text" class="toggle-btn active" onclick="switchMode('text')">Text</button>
+      <button type="button" id="btn-file" class="toggle-btn" onclick="switchMode('file')">File / Image</button>
+    </div>
+
+    <div id="input-text" class="input-section">
+      <label for="secret-text" class="sr-only">Secret text</label>
+      <textarea
+        id="secret-text"
+        name="secret-text"
+        rows="6"
+        placeholder="Paste your secret here — password, API key, note…"
+        class="textarea"
+        autofocus
+      ></textarea>
+    </div>
+
+    <div id="input-file" class="input-section hidden">
+      <label for="secret-file" class="file-label">
+        <span class="file-icon">📎</span>
+        <span id="file-name-display">Click to choose a file or drag &amp; drop</span>
+      </label>
+      <input
+        type="file"
+        id="secret-file"
+        name="secret-file"
+        class="file-input"
+        onchange="updateFileName(this)"
+      >
+    </div>
+
+    <div class="form-row">
+      <label for="expires-in" class="field-label">Expires after</label>
+      <select id="expires-in" name="expires-in" class="select">
+        <option value="0">Never</option>
+        <option value="3600">1 hour</option>
+        <option value="86400" selected>24 hours</option>
+        <option value="604800">7 days</option>
+      </select>
+    </div>
+
+    <div id="form-error" class="error-message hidden" role="alert"></div>
+
+    <button type="submit" id="submit-btn" class="btn btn-primary btn-full">
+      <span id="submit-label">Encrypt &amp; Create Link</span>
+      <span id="submit-spinner" class="spinner hidden" aria-hidden="true"></span>
+    </button>
+  </form>
+</div>
+
+<div class="card hidden" id="created-panel" aria-live="polite">
+  <div class="card-header">
+    <div class="success-icon">✅</div>
+    <h2>Your secret link is ready</h2>
+  </div>
+
+  <div class="warning-banner">
+    <span class="warning-icon">⚠️</span>
+    <strong>This link can only be viewed once.</strong> After the recipient opens it, the secret is permanently destroyed.
+  </div>
+
+  <div class="link-box">
+    <input type="text" id="secret-link" class="link-input" readonly aria-label="One-time secret link">
+    <button type="button" class="btn btn-copy" onclick="copyLink()" id="copy-btn" aria-label="Copy link to clipboard">
+      Copy
+    </button>
+  </div>
+
+  <button type="button" class="btn btn-secondary btn-full" onclick="resetForm()">
+    Share another secret
+  </button>
+</div>
+{{end}}
