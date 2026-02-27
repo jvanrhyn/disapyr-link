@@ -785,6 +785,14 @@ body::before {
 :root[data-theme="light"] .warning-banner strong {
   color: #A05C00;  /* 4.9:1 on light bg */
 }
+/* .btn-copy: --c5 on --c1 bg = 3.3:1; white on --c1 = 5.9:1 */
+:root[data-theme="light"] .btn-copy {
+  color: #ffffff;
+}
+/* .destroyed-notice: --c5 on near-white = 1.6:1; use --text-2 = 6.2:1 */
+:root[data-theme="light"] .destroyed-notice {
+  color: var(--text-2);
+}
 
 /* System preference — same component overrides */
 @media (prefers-color-scheme: light) {
@@ -821,5 +829,11 @@ body::before {
   :root:not([data-theme="dark"]) .warning-banner svg,
   :root:not([data-theme="dark"]) .warning-banner strong {
     color: #A05C00;
+  }
+  :root:not([data-theme="dark"]) .btn-copy {
+    color: #ffffff;
+  }
+  :root:not([data-theme="dark"]) .destroyed-notice {
+    color: var(--text-2);
   }
 }
