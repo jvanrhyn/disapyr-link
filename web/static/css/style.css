@@ -644,3 +644,150 @@ body::before {
   .main-content { padding: 2rem 0.875rem; }
   .footer-sep, .footer-inner span:last-child { display: none; }
 }
+
+/* ─── Theme toggle button ────────────────────────────────────────────────── */
+.theme-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: rgba(0, 171, 189, 0.08);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  background: rgba(0, 171, 189, 0.16);
+  border-color: var(--border-hi);
+  color: var(--c2);
+}
+/* Hide all icons by default; JS sets data-state to reveal the right one */
+.theme-icon { display: none; }
+.theme-toggle[data-state="system"] .theme-icon--system,
+.theme-toggle:not([data-state])    .theme-icon--system { display: block; }
+.theme-toggle[data-state="light"]  .theme-icon--light  { display: block; }
+.theme-toggle[data-state="dark"]   .theme-icon--dark   { display: block; }
+
+/* ─── Light theme tokens ─────────────────────────────────────────────────── */
+/* Shared overrides applied either via data-theme="light" or system preference. */
+/* Variables duplicated intentionally — only one block activates at a time.    */
+
+:root[data-theme="light"] {
+  --bg:        #F2F8FB;
+  --surface:   #FFFFFF;
+  --surface-2: #E6F2F7;
+  --border:    rgba(2, 110, 129, 0.13);
+  --border-hi: rgba(2, 110, 129, 0.36);
+
+  --text:   #0D2B38;
+  --text-2: #2A6070;
+  --text-3: #5A8A9A;
+
+  --glow-teal:   0 0 0 1px var(--border-hi), 0 0 16px rgba(2, 110, 129, 0.10);
+  --glow-orange: 0 0 0 1px rgba(255, 153, 51, 0.45), 0 0 20px rgba(255, 153, 51, 0.14);
+  --shadow:      0 4px 24px rgba(2, 110, 129, 0.10);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:        #F2F8FB;
+    --surface:   #FFFFFF;
+    --surface-2: #E6F2F7;
+    --border:    rgba(2, 110, 129, 0.13);
+    --border-hi: rgba(2, 110, 129, 0.36);
+
+    --text:   #0D2B38;
+    --text-2: #2A6070;
+    --text-3: #5A8A9A;
+
+    --glow-teal:   0 0 0 1px var(--border-hi), 0 0 16px rgba(2, 110, 129, 0.10);
+    --glow-orange: 0 0 0 1px rgba(255, 153, 51, 0.45), 0 0 20px rgba(255, 153, 51, 0.14);
+    --shadow:      0 4px 24px rgba(2, 110, 129, 0.10);
+  }
+}
+
+/* ─── Light theme component overrides ───────────────────────────────────── */
+/* These components use hardcoded dark rgba values that don't respond to tokens alone. */
+
+:root[data-theme="light"] body,
+:root[data-theme="light"] .site-header { --_light: 1; } /* marker to trigger nested selectors */
+
+/* Body dot-grid & bloom */
+:root[data-theme="light"] body {
+  background-image: radial-gradient(circle, rgba(2, 110, 129, 0.11) 1px, transparent 1px);
+}
+:root[data-theme="light"] body::before {
+  background: radial-gradient(ellipse 90% 50% at 50% -5%,
+    rgba(2, 110, 129, 0.07) 0%, transparent 65%);
+}
+
+/* Header */
+:root[data-theme="light"] .site-header {
+  background: rgba(242, 248, 251, 0.92);
+}
+
+/* Form inputs */
+:root[data-theme="light"] .textarea {
+  background: rgba(2, 110, 129, 0.04);
+}
+:root[data-theme="light"] .select {
+  background: rgba(2, 110, 129, 0.04);
+}
+
+/* Link box / copy strip */
+:root[data-theme="light"] .link-box {
+  background: rgba(2, 110, 129, 0.05);
+}
+
+/* Revealed secret text box */
+:root[data-theme="light"] .secret-text {
+  background: rgba(2, 110, 129, 0.04);
+}
+
+/* Header badge */
+:root[data-theme="light"] .header-badge {
+  background: rgba(2, 110, 129, 0.08);
+}
+
+/* Copy-link button (inside the link-box strip) */
+:root[data-theme="light"] .btn-copy.copied {
+  background: #d4f2e7;
+  color: #0e6e4a;
+}
+
+/* System preference — same component overrides */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) body {
+    background-image: radial-gradient(circle, rgba(2, 110, 129, 0.11) 1px, transparent 1px);
+  }
+  :root:not([data-theme="dark"]) body::before {
+    background: radial-gradient(ellipse 90% 50% at 50% -5%,
+      rgba(2, 110, 129, 0.07) 0%, transparent 65%);
+  }
+  :root:not([data-theme="dark"]) .site-header {
+    background: rgba(242, 248, 251, 0.92);
+  }
+  :root:not([data-theme="dark"]) .textarea,
+  :root:not([data-theme="dark"]) .select {
+    background: rgba(2, 110, 129, 0.04);
+  }
+  :root:not([data-theme="dark"]) .link-box {
+    background: rgba(2, 110, 129, 0.05);
+  }
+  :root:not([data-theme="dark"]) .secret-text {
+    background: rgba(2, 110, 129, 0.04);
+  }
+  :root:not([data-theme="dark"]) .header-badge {
+    background: rgba(2, 110, 129, 0.08);
+  }
+  :root:not([data-theme="dark"]) .btn-copy.copied {
+    background: #d4f2e7;
+    color: #0e6e4a;
+  }
+}
