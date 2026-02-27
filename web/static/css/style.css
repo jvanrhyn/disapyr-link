@@ -793,6 +793,10 @@ body::before {
 :root[data-theme="light"] .destroyed-notice {
   color: var(--text-2);
 }
+/* Card: replace dark charcoal gradient endpoint with pale teal */
+:root[data-theme="light"] .card {
+  background: linear-gradient(145deg, #ffffff 0%, #e4f3f7 100%);
+}
 
 /* System preference — same component overrides */
 @media (prefers-color-scheme: light) {
@@ -835,5 +839,8 @@ body::before {
   }
   :root:not([data-theme="dark"]) .destroyed-notice {
     color: var(--text-2);
+  }
+  :root:not([data-theme="dark"]) .card {
+    background: linear-gradient(145deg, #ffffff 0%, #e4f3f7 100%);
   }
 }
