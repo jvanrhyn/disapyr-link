@@ -646,33 +646,48 @@ body::before {
 }
 
 /* ─── Theme toggle button ────────────────────────────────────────────────── */
-.theme-toggle {
+/* ─── Theme controls (segmented button group) ────────────────────────────── */
+.theme-controls {
   margin-left: auto;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.theme-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  background: rgba(0, 171, 189, 0.08);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xs);
+  background: rgba(0, 171, 189, 0.06);
+  border: none;
+  border-left: 1px solid var(--border);
   color: var(--text-2);
   cursor: pointer;
-  transition: background 0.18s, border-color 0.18s, color 0.18s;
-  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
 }
-.theme-toggle:hover {
+.theme-btn:first-child {
+  border-left: none;
+}
+.theme-btn:hover {
   background: rgba(0, 171, 189, 0.16);
-  border-color: var(--border-hi);
   color: var(--c2);
 }
-/* Hide all icons by default; JS sets data-state to reveal the right one */
+/* System button active state */
+.theme-btn[data-active="true"] {
+  background: rgba(0, 171, 189, 0.14);
+  color: var(--c2);
+  box-shadow: inset 0 0 0 1px var(--border-hi);
+}
+/* Explicit button: show sun (light) or moon (dark/system) */
 .theme-icon { display: none; }
-.theme-toggle[data-state="system"] .theme-icon--system,
-.theme-toggle:not([data-state])    .theme-icon--system { display: block; }
-.theme-toggle[data-state="light"]  .theme-icon--light  { display: block; }
-.theme-toggle[data-state="dark"]   .theme-icon--dark   { display: block; }
+#theme-btn-explicit[data-state="light"]  .theme-icon--light { display: block; }
+#theme-btn-explicit[data-state="dark"]   .theme-icon--dark  { display: block; }
+#theme-btn-explicit:not([data-state])    .theme-icon--dark  { display: block; }
 
 /* ─── Light theme tokens ─────────────────────────────────────────────────── */
 /* Shared overrides applied either via data-theme="light" or system preference. */
