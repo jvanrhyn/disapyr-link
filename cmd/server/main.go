@@ -70,12 +70,15 @@ func main() {
 	}()
 
 	// Router (Go 1.22+ pattern matching).
+	createLimiter := handler.NewRateLimiter(cfg.RateLimitCreatePerMin, 5, cfg.TrustProxy, log)
+	revealLimiter := handler.NewRateLimiter(cfg.RateLimitRevealPerMin, 10, cfg.TrustProxy, log)
+
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS(web.FS)))))
 	mux.HandleFunc("GET /", h.ServeIndex)
-	mux.HandleFunc("POST /", h.CreateSecret)
+	mux.Handle("POST /", createLimiter.Limit(http.HandlerFunc(h.CreateSecret)))
 	mux.HandleFunc("GET /s/{token}", h.ServePage)
-	mux.HandleFunc("POST /s/{token}/reveal", h.RevealSecret)
+	mux.Handle("POST /s/{token}/reveal", revealLimiter.Limit(http.HandlerFunc(h.RevealSecret)))
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
