@@ -88,6 +88,7 @@ func main() {
 	// Router (Go 1.22+ pattern matching).
 	createLimiter := handler.NewRateLimiter(cfg.RateLimitCreatePerMin, 5, cfg.TrustProxy, log)
 	revealLimiter := handler.NewRateLimiter(cfg.RateLimitRevealPerMin, 10, cfg.TrustProxy, log)
+	healthLimiter := handler.NewRateLimiter(cfg.RateLimitHealthPerMin, 3, cfg.TrustProxy, log)
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS(web.FS)))))
@@ -95,9 +96,9 @@ func main() {
 	mux.Handle("POST /", createLimiter.Limit(http.HandlerFunc(h.CreateSecret)))
 	mux.HandleFunc("GET /s/{token}", h.ServePage)
 	mux.Handle("POST /s/{token}/reveal", revealLimiter.Limit(http.HandlerFunc(h.RevealSecret)))
-	mux.HandleFunc("GET /health", admin.BasicAuth(admin.ServeHealth))
-	mux.HandleFunc("GET /health/logs", admin.BasicAuth(admin.ServeHealthLogs))
-	mux.HandleFunc("POST /health/logs/clear", admin.BasicAuth(admin.ClearLogs))
+	mux.Handle("GET /health", healthLimiter.Limit(admin.BasicAuth(admin.ServeHealth)))
+	mux.Handle("GET /health/logs", healthLimiter.Limit(admin.BasicAuth(admin.ServeHealthLogs)))
+	mux.Handle("POST /health/logs/clear", healthLimiter.Limit(admin.BasicAuth(admin.ClearLogs)))
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

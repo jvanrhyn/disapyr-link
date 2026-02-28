@@ -16,6 +16,7 @@ type Config struct {
 	// Rate limiting (requests per minute, 0 = disabled).
 	RateLimitCreatePerMin int // POST / — secret creation
 	RateLimitRevealPerMin int // POST /s/{token}/reveal
+	RateLimitHealthPerMin int // GET|POST /health* — admin interface
 
 	// TrustProxy, when true, reads the client IP from X-Forwarded-For.
 	// Only enable this when the app is behind a trusted reverse proxy.
@@ -41,6 +42,10 @@ func Load() Config {
 	if revealRate < 0 {
 		revealRate = 0
 	}
+	healthRate := getEnvInt("RATE_LIMIT_HEALTH_PER_MIN", 5)
+	if healthRate < 0 {
+		healthRate = 0
+	}
 	return Config{
 		DatabaseURL:    getEnv("DATABASE_URL", "postgres://disapyr:disapyr@localhost:5432/disapyr?sslmode=disable"),
 		Port:           getEnv("PORT", "8080"),
@@ -50,6 +55,7 @@ func Load() Config {
 
 		RateLimitCreatePerMin: createRate,
 		RateLimitRevealPerMin: revealRate,
+		RateLimitHealthPerMin: healthRate,
 		TrustProxy:            getEnv("TRUST_PROXY", "") == "true",
 		LogDBMinLevel:         getEnv("LOG_DB_MIN_LEVEL", "warn"),
 		AdminUser:             getEnv("ADMIN_USER", ""),
