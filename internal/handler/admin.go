@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"runtime"
 	"strconv"
 	"strings"
@@ -183,6 +184,7 @@ func (a *AdminHandler) ServeHealthLogs(w http.ResponseWriter, r *http.Request) {
 		Window   string
 		HasMore  bool
 		PageSize int
+		ClearMsg string // empty unless this is a clear response
 	}
 	const pageSize = 50
 	data := partialData{
@@ -205,6 +207,112 @@ func (a *AdminHandler) ServeHealthLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tmpl.ExecuteTemplate(w, "health_logs_partial.html", data); err != nil {
 		a.log.Error("health logs partial execute", "error", err)
+	}
+}
+
+// ClearLogs handles POST /health/logs/clear.
+// Query param older_than: empty = all, "1h"/"6h"/"24h"/"7d" = time-bounded delete.
+// Returns an updated log partial (HTMX response).
+func (a *AdminHandler) ClearLogs(w http.ResponseWriter, r *http.Request) {
+	// CSRF guard: verify Origin/Referer matches the request host.
+	if !sameOrigin(r) {
+		http.Error(w, "Forbidden: cross-origin request", http.StatusForbidden)
+		return
+	}
+
+	olderThan := r.FormValue("older_than")
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	var (
+		n   int64
+		err error
+	)
+
+	if olderThan == "" {
+		ct, execErr := a.pool.Exec(ctx, `DELETE FROM app_logs`)
+		err = execErr
+		if execErr == nil {
+			n = ct.RowsAffected()
+		}
+	} else {
+		interval := windowToInterval(olderThan)
+		ct, execErr := a.pool.Exec(ctx, `DELETE FROM app_logs WHERE ts < NOW() - $1::interval`, interval)
+		err = execErr
+		if execErr == nil {
+			n = ct.RowsAffected()
+		}
+	}
+
+	if err != nil {
+		a.log.Warn("clear logs failed", "older_than", olderThan, "error", err)
+		http.Error(w, "failed to clear logs: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	a.log.Warn("logs cleared by admin",
+		"older_than", olderThan,
+		"rows_deleted", n,
+		"remote_addr", r.RemoteAddr,
+	)
+
+	// Return a refreshed log partial so the browser updates in-place.
+	rows, total := a.queryLogs(ctx, "", "24h", 0)
+
+	type partialData struct {
+		Rows      []logRow
+		Total     int
+		Page      int
+		NextPage  int
+		PrevPage  int
+		Level     string
+		Window    string
+		HasMore   bool
+		PageSize  int
+		ClearMsg  string
+	}
+	const pageSize = 50
+	msg := ""
+	if olderThan == "" {
+		msg = "All logs cleared."
+	} else {
+		msg = "Logs older than " + humanWindow(olderThan) + " cleared."
+	}
+	data := partialData{
+		Rows:     rows,
+		Total:    total,
+		Page:     0,
+		NextPage: 1,
+		PrevPage: -1,
+		Window:   "24h",
+		HasMore:  pageSize < total,
+		PageSize: pageSize,
+		ClearMsg: msg,
+	}
+
+	tmpl, ok := a.tmpls["health_logs_partial"]
+	if !ok {
+		http.Error(w, "template not found", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tmpl.ExecuteTemplate(w, "health_logs_partial.html", data); err != nil {
+		a.log.Error("clear logs partial execute", "error", err)
+	}
+}
+
+// humanWindow converts a window string to a human-readable label.
+func humanWindow(window string) string {
+	switch window {
+	case "1h":
+		return "1 hour"
+	case "6h":
+		return "6 hours"
+	case "7d":
+		return "7 days"
+	default:
+		return "24 hours"
 	}
 }
 
@@ -321,4 +429,29 @@ func formatUptime(d time.Duration) string {
 		return strconv.Itoa(hours) + "h " + strconv.Itoa(minutes) + "m"
 	}
 	return strconv.Itoa(minutes) + "m " + strconv.Itoa(seconds) + "s"
+}
+
+// sameOrigin returns true when the request's Origin or Referer header matches
+// the request Host. This is a lightweight CSRF guard for admin POST endpoints
+// protected by Basic Auth (where credentials can be cached by the browser).
+// Requests with no Origin AND no Referer are allowed (e.g. direct API calls,
+// curl — the admin already authenticated via Basic Auth).
+func sameOrigin(r *http.Request) bool {
+	check := func(raw string) bool {
+		u, err := url.Parse(raw)
+		if err != nil {
+			return false
+		}
+		// Compare host (strip default ports for robustness).
+		return strings.EqualFold(u.Host, r.Host) ||
+			strings.EqualFold(u.Hostname(), r.Host)
+	}
+	if origin := r.Header.Get("Origin"); origin != "" {
+		return check(origin)
+	}
+	if ref := r.Header.Get("Referer"); ref != "" {
+		return check(ref)
+	}
+	// No Origin/Referer — allow (direct/curl calls).
+	return true
 }

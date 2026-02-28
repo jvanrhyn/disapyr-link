@@ -24,6 +24,16 @@
 {{/* OOB: update count badge */}}
 <span id="log-total-count" hx-swap-oob="true" class="log-count">{{.Total}} entries</span>
 
+{{/* OOB: flash notice (shown after clear, hidden otherwise) */}}
+<div id="log-flash" hx-swap-oob="true">
+  {{if .ClearMsg}}
+  <div class="log-flash-notice">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+    {{.ClearMsg}}
+  </div>
+  {{end}}
+</div>
+
 {{/* OOB: update pagination */}}
 <div id="log-pagination" hx-swap-oob="true" class="log-pagination">
   <span class="log-page-info">Page {{.Page}} · {{.Total}} total</span>

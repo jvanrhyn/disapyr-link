@@ -97,6 +97,7 @@ func main() {
 	mux.Handle("POST /s/{token}/reveal", revealLimiter.Limit(http.HandlerFunc(h.RevealSecret)))
 	mux.HandleFunc("GET /health", admin.BasicAuth(admin.ServeHealth))
 	mux.HandleFunc("GET /health/logs", admin.BasicAuth(admin.ServeHealthLogs))
+	mux.HandleFunc("POST /health/logs/clear", admin.BasicAuth(admin.ClearLogs))
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
