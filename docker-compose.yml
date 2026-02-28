@@ -18,6 +18,8 @@ services:
       POSTGRES_USER: disapyr
       POSTGRES_PASSWORD: disapyr
       POSTGRES_DB: disapyr
+    ports:
+      - 15432:5432
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
