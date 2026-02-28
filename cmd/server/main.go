@@ -63,6 +63,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	admin, err := handler.NewAdminHandler(pool, log, cfg.AdminUser, cfg.AdminPassword, web.FS)
+	if err != nil {
+		log.Error("init admin handler", "err", err)
+		os.Exit(1)
+	}
+
 	// Background worker: delete expired secrets every 15 minutes.
 	go func() {
 		ticker := time.NewTicker(15 * time.Minute)
@@ -89,6 +95,8 @@ func main() {
 	mux.Handle("POST /", createLimiter.Limit(http.HandlerFunc(h.CreateSecret)))
 	mux.HandleFunc("GET /s/{token}", h.ServePage)
 	mux.Handle("POST /s/{token}/reveal", revealLimiter.Limit(http.HandlerFunc(h.RevealSecret)))
+	mux.HandleFunc("GET /health", admin.BasicAuth(admin.ServeHealth))
+	mux.HandleFunc("GET /health/logs", admin.BasicAuth(admin.ServeHealthLogs))
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

@@ -24,6 +24,11 @@ type Config struct {
 	// LogDBMinLevel is the minimum slog level written to the app_logs DB table.
 	// Valid values: "debug", "info", "warn", "error". Default: "warn".
 	LogDBMinLevel string
+
+	// Admin credentials for /health (log browser + health status).
+	// Both must be non-empty to enable the admin interface.
+	AdminUser     string
+	AdminPassword string
 }
 
 // Load reads configuration from environment variables with sensible defaults.
@@ -47,6 +52,8 @@ func Load() Config {
 		RateLimitRevealPerMin: revealRate,
 		TrustProxy:            getEnv("TRUST_PROXY", "") == "true",
 		LogDBMinLevel:         getEnv("LOG_DB_MIN_LEVEL", "warn"),
+		AdminUser:             getEnv("ADMIN_USER", ""),
+		AdminPassword:         getEnv("ADMIN_PASSWORD", ""),
 	}
 }
 

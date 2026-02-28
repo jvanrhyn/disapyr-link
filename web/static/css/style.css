@@ -844,3 +844,300 @@ body::before {
     background: linear-gradient(145deg, #ffffff 0%, #e4f3f7 100%);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Admin / Health page
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Wide card variant for the admin dashboard */
+.card--wide {
+  max-width: 1100px;
+}
+
+/* Stats grid — health status cards */
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.stat-card__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+}
+
+.stat-card__value {
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.stat-card__sub {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-family: var(--mono);
+}
+
+.stat-card--ok   { border-left: 3px solid #2ebb77; }
+.stat-card--warn { border-left: 3px solid var(--c4); }
+.stat-card--err  { border-left: 3px solid var(--error); }
+
+/* Level summary badges */
+.level-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.level-badge--debug { background: rgba(100, 180, 255, 0.12); color: #6ab4ff; border: 1px solid rgba(100, 180, 255, 0.25); }
+.level-badge--info  { background: rgba(0, 171, 189, 0.12);   color: var(--c2);  border: 1px solid rgba(0, 171, 189, 0.25); }
+.level-badge--warn  { background: rgba(255, 153, 51, 0.12);  color: var(--c4);  border: 1px solid rgba(255, 153, 51, 0.28); }
+.level-badge--error { background: rgba(255, 107, 107, 0.12); color: var(--error); border: 1px solid rgba(255, 107, 107, 0.28); }
+
+/* Log browser section */
+.log-section__title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  margin-bottom: 1rem;
+}
+
+/* Filter toolbar */
+.log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.log-filters .select {
+  flex: 1;
+  min-width: 130px;
+  max-width: 200px;
+}
+
+.log-count {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+/* Log table */
+.log-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  font-family: var(--mono);
+}
+
+.log-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.log-table th {
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.65rem 0.875rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.log-table td {
+  padding: 0.55rem 0.875rem;
+  border-bottom: 1px solid rgba(0, 171, 189, 0.06);
+  vertical-align: top;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+.log-table tr:last-child td { border-bottom: none; }
+
+.log-table tr:hover td {
+  background: rgba(0, 171, 189, 0.04);
+}
+
+/* Timestamp column */
+.log-ts {
+  white-space: nowrap;
+  color: var(--text-3);
+  font-size: 0.7rem;
+  min-width: 155px;
+}
+
+/* Level pill inline in table */
+.log-level {
+  white-space: nowrap;
+}
+
+/* Message column */
+.log-msg {
+  color: var(--text);
+  max-width: 380px;
+  word-break: break-word;
+}
+
+/* Attrs: collapsible <details> */
+.log-attrs-wrap {
+  max-width: 280px;
+}
+
+.log-attrs-wrap details summary {
+  cursor: pointer;
+  color: var(--text-3);
+  font-size: 0.68rem;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.log-attrs-wrap details summary::before {
+  content: '▶';
+  font-size: 0.55rem;
+  transition: transform 0.15s;
+  display: inline-block;
+}
+
+.log-attrs-wrap details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.log-attrs-pre {
+  margin-top: 0.4rem;
+  font-size: 0.65rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 0.5rem 0.625rem;
+  max-height: 160px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hi) transparent;
+}
+
+/* Empty state */
+.log-empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 0.8rem;
+}
+
+/* Pagination row */
+.log-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 0 0;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.log-page-info {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-family: var(--mono);
+}
+
+/* htmx indicator */
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+}
+
+/* ─── Light mode overrides: admin ────────────────────────────────────────── */
+:root[data-theme="light"] .stat-card {
+  background: rgba(2, 110, 129, 0.04);
+}
+
+:root[data-theme="light"] .log-table th {
+  background: rgba(2, 110, 129, 0.06);
+}
+
+:root[data-theme="light"] .log-table tr:hover td {
+  background: rgba(2, 110, 129, 0.03);
+}
+
+:root[data-theme="light"] .log-attrs-pre {
+  background: rgba(2, 110, 129, 0.04);
+}
+
+:root[data-theme="light"] .level-badge--debug { color: #1a7ab8; background: rgba(0, 100, 200, 0.08); border-color: rgba(0, 100, 200, 0.18); }
+:root[data-theme="light"] .level-badge--info  { color: #005f6b; background: rgba(0, 100, 115, 0.08); border-color: rgba(0, 100, 115, 0.18); }
+:root[data-theme="light"] .level-badge--warn  { color: #9a4f00; background: rgba(154, 79, 0, 0.08);  border-color: rgba(154, 79, 0, 0.18); }
+:root[data-theme="light"] .level-badge--error { color: #b00020; background: rgba(176, 0, 32, 0.07);  border-color: rgba(176, 0, 32, 0.18); }
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .stat-card {
+    background: rgba(2, 110, 129, 0.04);
+  }
+  :root:not([data-theme="dark"]) .log-table th {
+    background: rgba(2, 110, 129, 0.06);
+  }
+  :root:not([data-theme="dark"]) .log-table tr:hover td {
+    background: rgba(2, 110, 129, 0.03);
+  }
+  :root:not([data-theme="dark"]) .log-attrs-pre {
+    background: rgba(2, 110, 129, 0.04);
+  }
+  :root:not([data-theme="dark"]) .level-badge--debug { color: #1a7ab8; background: rgba(0, 100, 200, 0.08); border-color: rgba(0, 100, 200, 0.18); }
+  :root:not([data-theme="dark"]) .level-badge--info  { color: #005f6b; background: rgba(0, 100, 115, 0.08); border-color: rgba(0, 100, 115, 0.18); }
+  :root:not([data-theme="dark"]) .level-badge--warn  { color: #9a4f00; background: rgba(154, 79, 0, 0.08);  border-color: rgba(154, 79, 0, 0.18); }
+  :root:not([data-theme="dark"]) .level-badge--error { color: #b00020; background: rgba(176, 0, 32, 0.07);  border-color: rgba(176, 0, 32, 0.18); }
+}

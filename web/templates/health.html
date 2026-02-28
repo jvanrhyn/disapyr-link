@@ -1,0 +1,154 @@
+{{template "base" .}}
+
+{{define "title"}}Site Health — Disapyr{{end}}
+
+{{define "extrahead"}}
+  <script src="/static/js/htmx.min.js" defer></script>
+{{end}}
+
+{{define "content"}}
+<div class="card card--wide animate-up">
+
+  <div class="card-header" style="margin-bottom: 1.75rem;">
+    <div class="card-icon {{if eq .DBStatus "healthy"}}success{{else}}gone{{end}}">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+    </div>
+    <h1>Site Health</h1>
+    <p class="subtitle">Runtime status, database health, and application logs.</p>
+  </div>
+
+  {{/* ── Status grid ─────────────────────────────────────────────── */}}
+  <div class="health-grid">
+
+    <div class="stat-card stat-card--ok">
+      <span class="stat-card__label">Application</span>
+      <span class="stat-card__value">● Healthy</span>
+      <span class="stat-card__sub">Go {{.GoVersion}}</span>
+    </div>
+
+    <div class="stat-card {{if eq .DBStatus "healthy"}}stat-card--ok{{else}}stat-card--err{{end}}">
+      <span class="stat-card__label">Database</span>
+      {{if eq .DBStatus "healthy"}}
+        <span class="stat-card__value">● Healthy</span>
+        <span class="stat-card__sub">{{.DBTotalConn}} / {{.DBMaxConn}} conns · {{.DBIdleConn}} idle</span>
+      {{else}}
+        <span class="stat-card__value" style="color:var(--error)">✕ Unhealthy</span>
+        <span class="stat-card__sub" style="color:var(--error); word-break:break-all">{{.DBError}}</span>
+      {{end}}
+    </div>
+
+    <div class="stat-card stat-card--ok">
+      <span class="stat-card__label">Uptime</span>
+      <span class="stat-card__value">{{.Uptime}}</span>
+      <span class="stat-card__sub">since last restart</span>
+    </div>
+
+  </div>
+
+  {{/* ── Log level summary (last 24 h) ──────────────────────────── */}}
+  {{if .LogSummary}}
+  <p class="log-section__title">Log events — last 24 h</p>
+  <div class="level-summary" style="margin-bottom: 2rem;">
+    {{range .LogSummary}}
+    <span class="level-badge level-badge--{{.LevelClass}}">
+      {{.Level}} <strong>{{.Count}}</strong>
+    </span>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{/* ── Log browser ─────────────────────────────────────────────── */}}
+  <p class="log-section__title">Log browser</p>
+
+  <div class="log-filters"
+       hx-get="/health/logs"
+       hx-target="#log-body"
+       hx-trigger="change"
+       hx-include="[name='level'],[name='window']"
+       hx-vals='{"page":"0"}'
+       hx-indicator="#log-spinner">
+
+    <select name="level" class="select" aria-label="Filter by level">
+      <option value="">All levels</option>
+      <option value="DEBUG">DEBUG</option>
+      <option value="INFO">INFO</option>
+      <option value="WARN">WARN</option>
+      <option value="ERROR">ERROR</option>
+    </select>
+
+    <select name="window" class="select" aria-label="Time window">
+      <option value="1h">Last 1 hour</option>
+      <option value="6h">Last 6 hours</option>
+      <option value="24h" selected>Last 24 hours</option>
+      <option value="7d">Last 7 days</option>
+    </select>
+
+    <span id="log-spinner" class="htmx-indicator" style="font-size:0.72rem; color:var(--text-3); font-family:var(--mono);">
+      Loading…
+    </span>
+
+    <span class="log-count" id="log-total-count">{{.TotalLogs}} entries</span>
+  </div>
+
+  <div class="log-table-wrap">
+    <table class="log-table" aria-label="Application logs">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Level</th>
+          <th>Message</th>
+          <th>Attributes</th>
+        </tr>
+      </thead>
+      <tbody id="log-body">
+        {{template "log_rows" .InitialLogs}}
+      </tbody>
+    </table>
+  </div>
+
+  {{/* ── Pagination ───────────────────────────────────────────────── */}}
+  <div class="log-pagination" id="log-pagination">
+    <span class="log-page-info">Showing up to 50 per page</span>
+    {{if gt .TotalLogs 50}}
+    <button class="btn btn-ghost"
+            hx-get="/health/logs"
+            hx-target="#log-body"
+            hx-swap="innerHTML"
+            hx-include="[name='level'],[name='window']"
+            hx-vals='{"page":"1"}'
+            hx-indicator="#log-spinner"
+            style="font-size:0.78rem;">
+      Next page →
+    </button>
+    {{end}}
+  </div>
+
+</div>
+{{end}}
+
+{{/* ── Row sub-template (also used by the partial) ──────────────── */}}
+{{define "log_rows"}}
+{{if .}}
+  {{range .}}
+  <tr>
+    <td class="log-ts">{{.TS.Format "2006-01-02 15:04:05"}}</td>
+    <td class="log-level">
+      <span class="level-badge level-badge--{{.LevelClass}}">{{.Level}}</span>
+    </td>
+    <td class="log-msg">{{.Msg}}</td>
+    <td class="log-attrs-wrap">
+      {{if .Attrs}}
+      <details>
+        <summary>attrs</summary>
+        <pre class="log-attrs-pre">{{.Attrs}}</pre>
+      </details>
+      {{else}}<span style="color:var(--text-3)">—</span>{{end}}
+    </td>
+  </tr>
+  {{end}}
+{{else}}
+  <tr><td colspan="4" class="log-empty">No log entries found for this filter.</td></tr>
+{{end}}
+{{end}}
