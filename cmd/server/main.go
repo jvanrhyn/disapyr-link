@@ -14,6 +14,7 @@ import (
 	"github.com/jvanrhyn/disapyr-link/internal/config"
 	"github.com/jvanrhyn/disapyr-link/internal/db"
 	"github.com/jvanrhyn/disapyr-link/internal/handler"
+	applogger "github.com/jvanrhyn/disapyr-link/internal/logger"
 	"github.com/jvanrhyn/disapyr-link/internal/repository"
 	"github.com/jvanrhyn/disapyr-link/internal/service"
 	"github.com/jvanrhyn/disapyr-link/web"
@@ -27,7 +28,8 @@ func main() {
 	if cfg.LogLevel == "debug" {
 		level = slog.LevelDebug
 	}
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	log := slog.New(jsonHandler)
 	slog.SetDefault(log)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
@@ -40,6 +42,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+
+	// Upgrade logger: fan out to both stdout JSON and the app_logs DB table.
+	dbLogLevel := parseLogLevel(cfg.LogDBMinLevel)
+	dbHandler := applogger.NewDBHandler(pool, dbLogLevel)
+	defer dbHandler.Stop() // drain buffer on graceful shutdown
+	log = slog.New(applogger.NewMultiHandler(jsonHandler, dbHandler))
+	slog.SetDefault(log)
+
 	log.Info("database connected")
 
 	// Layers.
@@ -112,4 +122,18 @@ func main() {
 func staticFS(webFS fs.FS) fs.FS {
 	sub, _ := fs.Sub(webFS, "static")
 	return sub
+}
+
+// parseLogLevel converts a level string to slog.Level. Defaults to Warn.
+func parseLogLevel(s string) slog.Level {
+	switch s {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelWarn
+	}
 }

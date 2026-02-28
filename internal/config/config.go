@@ -20,6 +20,10 @@ type Config struct {
 	// TrustProxy, when true, reads the client IP from X-Forwarded-For.
 	// Only enable this when the app is behind a trusted reverse proxy.
 	TrustProxy bool
+
+	// LogDBMinLevel is the minimum slog level written to the app_logs DB table.
+	// Valid values: "debug", "info", "warn", "error". Default: "warn".
+	LogDBMinLevel string
 }
 
 // Load reads configuration from environment variables with sensible defaults.
@@ -42,6 +46,7 @@ func Load() Config {
 		RateLimitCreatePerMin: createRate,
 		RateLimitRevealPerMin: revealRate,
 		TrustProxy:            getEnv("TRUST_PROXY", "") == "true",
+		LogDBMinLevel:         getEnv("LOG_DB_MIN_LEVEL", "warn"),
 	}
 }
 
