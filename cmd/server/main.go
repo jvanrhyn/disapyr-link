@@ -96,6 +96,7 @@ func main() {
 	mux.Handle("POST /", createLimiter.Limit(http.HandlerFunc(h.CreateSecret)))
 	mux.HandleFunc("GET /s/{token}", h.ServePage)
 	mux.Handle("POST /s/{token}/reveal", revealLimiter.Limit(http.HandlerFunc(h.RevealSecret)))
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.Handle("GET /health", healthLimiter.Limit(admin.BasicAuth(admin.ServeHealth)))
 	mux.Handle("GET /health/logs", healthLimiter.Limit(admin.BasicAuth(admin.ServeHealthLogs)))
 	mux.Handle("POST /health/logs/clear", healthLimiter.Limit(admin.BasicAuth(admin.ClearLogs)))

@@ -1,0 +1,106 @@
+# PostgreSQL 16 StatefulSet — in-cluster, single replica
+# Migrations are applied by an init container before postgres starts accepting app connections.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: disapyr
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None   # headless — stable DNS: postgres.disapyr.svc.cluster.local
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: disapyr
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: disapyr
+            - name: POSTGRES_DB
+              value: disapyr
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: disapyr-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "disapyr", "-d", "disapyr"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes: []
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        # storageClassName: standard  # ← uncomment and set to match your cluster
+        resources:
+          requests:
+            storage: 10Gi
+---
+# ConfigMap carrying the SQL migration files into the StatefulSet
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: disapyr-migrations
+  namespace: disapyr
+data:
+  001_init.sql: |
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+    CREATE TABLE IF NOT EXISTS secrets (
+        id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        token        TEXT        NOT NULL UNIQUE,
+        ciphertext   BYTEA       NOT NULL,
+        nonce        BYTEA       NOT NULL,
+        expires_at   TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_secrets_token ON secrets (token);
+    CREATE INDEX IF NOT EXISTS idx_secrets_expires_at ON secrets (expires_at) WHERE expires_at IS NOT NULL;
+
+  002_app_logs.sql: |
+    CREATE TABLE IF NOT EXISTS app_logs (
+        id        BIGSERIAL    PRIMARY KEY,
+        ts        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        level     TEXT         NOT NULL,
+        msg       TEXT         NOT NULL,
+        attrs     JSONB
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_app_logs_ts    ON app_logs (ts DESC);
+    CREATE INDEX IF NOT EXISTS idx_app_logs_level ON app_logs (level);

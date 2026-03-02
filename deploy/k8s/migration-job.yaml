@@ -1,0 +1,58 @@
+# Run after postgres is ready:
+#   kubectl apply -f deploy/k8s/migration-job.yaml
+#   kubectl wait --for=condition=complete job/disapyr-migrate -n disapyr --timeout=120s
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: disapyr-migrate
+  namespace: disapyr
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        # Wait until postgres is accepting connections before running migrations.
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres.disapyr.svc.cluster.local -U disapyr -d disapyr; do
+                echo "waiting for postgres..."; sleep 3
+              done
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: disapyr-secret
+                  key: POSTGRES_PASSWORD
+      containers:
+        - name: migrate
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              psql "$DATABASE_URL" -f /migrations/001_init.sql
+              psql "$DATABASE_URL" -f /migrations/002_app_logs.sql
+              echo "migrations complete"
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: disapyr-secret
+                  key: DATABASE_URL
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: disapyr-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+      volumes:
+        - name: migrations
+          configMap:
+            name: disapyr-migrations

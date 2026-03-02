@@ -16,6 +16,8 @@ vendor/
 # ── Environment / secrets ─────────────────────────────────────────────────────
 .env
 !.env.example
+deploy/k8s/secret.yaml
+!deploy/k8s/secret.yaml.example
 
 # ── Docker build cache ────────────────────────────────────────────────────────
 .dockerignore

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: disapyr
+  namespace: disapyr
+  labels:
+    app: disapyr
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: disapyr
+  template:
+    metadata:
+      labels:
+        app: disapyr
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret   # created by: see deploy/k8s/README.md
+      containers:
+        - name: disapyr
+          image: ghcr.io/jvanrhyn/disapyr-link:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: disapyr-config
+            - secretRef:
+                name: disapyr-secret
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
