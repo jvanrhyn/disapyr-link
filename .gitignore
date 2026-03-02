@@ -43,3 +43,4 @@ qodana.yaml
 # ── Logs & temp files ─────────────────────────────────────────────────────────
 *.log
 tmp/
+deploy/k8s/secret.yml

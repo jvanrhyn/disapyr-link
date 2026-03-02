@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -21,7 +22,15 @@ import (
 )
 
 func main() {
+	printConfig := flag.Bool("print-config", false, "print resolved configuration and exit")
+	flag.Parse()
+
 	cfg := config.Load()
+
+	if *printConfig {
+		cfg.Print(os.Stdout)
+		os.Exit(0)
+	}
 
 	// Structured JSON logging.
 	level := slog.LevelInfo
