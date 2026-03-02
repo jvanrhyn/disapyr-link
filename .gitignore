@@ -1,0 +1,45 @@
+# ── Compiled binary ──────────────────────────────────────────────────────────
+disapyr
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# ── Go toolchain ─────────────────────────────────────────────────────────────
+*.test
+*.out
+coverage.out
+coverage.html
+vendor/
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+!.env.example
+
+# ── Docker build cache ────────────────────────────────────────────────────────
+.dockerignore
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# ── JetBrains IDEs (GoLand, IntelliJ, etc.) ──────────────────────────────────
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ── Visual Studio Code ────────────────────────────────────────────────────────
+.vscode/
+
+# ── Qodana (JetBrains code quality) ──────────────────────────────────────────
+qodana.yaml
+.qodana/
+
+# ── Logs & temp files ─────────────────────────────────────────────────────────
+*.log
+tmp/

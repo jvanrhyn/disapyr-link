@@ -1,0 +1,64 @@
+{{/* health_logs_partial.html — HTMX response for /health/logs */}}
+{{if .Rows}}
+  {{range .Rows}}
+  <tr>
+    <td class="log-ts">{{.TS.Format "2006-01-02 15:04:05"}}</td>
+    <td class="log-level">
+      <span class="level-badge level-badge--{{.LevelClass}}">{{.Level}}</span>
+    </td>
+    <td class="log-msg">{{.Msg}}</td>
+    <td class="log-attrs-wrap">
+      {{if .Attrs}}
+      <details>
+        <summary>attrs</summary>
+        <pre class="log-attrs-pre">{{.Attrs}}</pre>
+      </details>
+      {{else}}<span style="color:var(--text-3)">—</span>{{end}}
+    </td>
+  </tr>
+  {{end}}
+{{else}}
+  <tr><td colspan="4" class="log-empty">No log entries found for this filter.</td></tr>
+{{end}}
+
+{{/* OOB: update count badge */}}
+<span id="log-total-count" hx-swap-oob="true" class="log-count">{{.Total}} entries</span>
+
+{{/* OOB: flash notice (shown after clear, hidden otherwise) */}}
+<div id="log-flash" hx-swap-oob="true">
+  {{if .ClearMsg}}
+  <div class="log-flash-notice">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+    {{.ClearMsg}}
+  </div>
+  {{end}}
+</div>
+
+{{/* OOB: update pagination */}}
+<div id="log-pagination" hx-swap-oob="true" class="log-pagination">
+  <span class="log-page-info">Page {{.Page}} · {{.Total}} total</span>
+  {{if gt .Page 0}}
+  <button class="btn btn-ghost"
+          hx-get="/health/logs"
+          hx-target="#log-body"
+          hx-swap="innerHTML"
+          hx-include="[name='level'],[name='window']"
+          hx-vals='{"page":"{{.PrevPage}}"}'
+          hx-indicator="#log-spinner"
+          style="font-size:0.78rem;">
+    ← Prev
+  </button>
+  {{end}}
+  {{if .HasMore}}
+  <button class="btn btn-ghost"
+          hx-get="/health/logs"
+          hx-target="#log-body"
+          hx-swap="innerHTML"
+          hx-include="[name='level'],[name='window']"
+          hx-vals='{"page":"{{.NextPage}}"}'
+          hx-indicator="#log-spinner"
+          style="font-size:0.78rem;">
+    Next →
+  </button>
+  {{end}}
+</div>

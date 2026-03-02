@@ -1,0 +1,68 @@
+{{define "base"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{block "title" .}}Disapyr — One-Time Secret Sharing{{end}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="/static/js/theme-init.js"></script>
+  <script src="/static/js/crypto.js" defer></script>
+  <script src="/static/js/effects.js" defer></script>
+  {{block "extrahead" .}}{{end}}
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="logo">
+      <svg class="logo-mark" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="3" y="11" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="1.75"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+        <circle cx="12" cy="17" r="1.5" fill="currentColor"/>
+      </svg>
+      <span class="logo-text">disapyr</span>
+    </a>
+    <div class="header-badge">
+      <span class="badge-pulse"></span>
+      zero&#8209;knowledge
+    </div>
+    <div class="theme-controls">
+      <button id="theme-btn-system" class="theme-btn" aria-label="Follow system theme" title="Follow system theme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <path d="M8 21h8M12 17v4"/>
+        </svg>
+      </button>
+      <button id="theme-btn-explicit" class="theme-btn" aria-label="Switch to light mode" title="Toggle light/dark">
+        <!-- Sun icon -->
+        <svg class="theme-icon theme-icon--light" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <!-- Moon icon -->
+        <svg class="theme-icon theme-icon--dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    {{block "content" .}}{{end}}
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <rect x="3" y="11" width="18" height="12" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <span>Encrypted in your browser. The server never sees your key.</span>
+      <span class="footer-sep">&middot;</span>
+      <span>Each secret is viewable <strong>once</strong> then permanently destroyed.</span>
+    </div>
+  </footer>
+</body>
+</html>
+{{end}}
