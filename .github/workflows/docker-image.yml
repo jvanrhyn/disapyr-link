@@ -2,7 +2,7 @@ name: Publish Docker image to GHCR
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   # optionally also publish on tags:
   # push:
   #   tags: [ "v*" ]
