@@ -31,6 +31,7 @@ https://your-domain/s/{token}#key={base64url-key}
 | HTTP security headers | `Content-Security-Policy` (strict), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` |
 | CSP enforcement | No inline scripts or styles; all JS is served as external files |
 | File safety | Client-side blocklist rejects executable file types before encryption (`.exe`, `.msi`, `.bat`, `.sh`, `.jar`, etc.) |
+| Rate limiting | Per-IP token-bucket limiter on write endpoints (`POST /` and `POST /s/{token}/reveal`) and admin endpoints; configurable per route via env vars; responds with `Retry-After` header on 429 |
 
 > **Note on server-side AV scanning**: because the server only ever receives encrypted ciphertext, server-side antivirus scanning is architecturally impossible by design. The client-side extension blocklist is the safety layer for executable types.
 
@@ -46,6 +47,10 @@ https://your-domain/s/{token}#key={base64url-key}
 - **Light / Dark / System theme** — three-state toggle with FOUC-free initialisation
 - **Destruction confirmation** — "This secret has been destroyed" shown after retrieval
 - **Configurable size limit** — default 10 MB, set via `MAX_SECRET_BYTES`
+- **Per-IP rate limiting** — token-bucket limiter on write and admin endpoints; configurable per route with `Retry-After` response headers
+- **Admin `/health` page** — system status (uptime, DB pool stats) and paginated log browser; disabled by default, enabled with `ADMIN_USER` + `ADMIN_PASSWORD`
+- **Application log persistence** — structured logs at or above `LOG_DB_MIN_LEVEL` are written to the `app_logs` DB table and browsable from the admin page
+- **Background expiry cleanup** — a goroutine runs every 15 minutes to hard-delete expired secrets from the database
 
 ---
 
@@ -59,7 +64,7 @@ https://your-domain/s/{token}#key={base64url-key}
 | Database | PostgreSQL 16 |
 | DB driver | `pgx/v5` |
 | Client crypto | Web Crypto API (AES-GCM 256) |
-| Frontend | Vanilla JS + Go templates (no SPA framework) |
+| Frontend | Vanilla JS + Go templates; [htmx](https://htmx.org) for admin partial updates |
 | Container | Docker (multi-stage) + docker-compose |
 | Logging | `log/slog` (stdlib) |
 
@@ -104,8 +109,9 @@ cp .env.example .env
 # Edit DATABASE_URL if needed, e.g.:
 # DATABASE_URL=postgres://disapyr:disapyr@localhost:5432/disapyr?sslmode=disable
 
-# 3. Apply the schema
+# 3. Apply the schema (two migrations)
 psql "$DATABASE_URL" -f internal/db/migrations/001_init.sql
+psql "$DATABASE_URL" -f internal/db/migrations/002_app_logs.sql
 
 # 4. Run
 go run ./cmd/server
@@ -124,6 +130,13 @@ All configuration is via environment variables (`.env` file or shell):
 | `BASE_URL` | `http://localhost:8080` | Public base URL (used in retrieval links) |
 | `MAX_SECRET_BYTES` | `10485760` (10 MB) | Maximum encrypted payload size in bytes |
 | `LOG_LEVEL` | `info` | Logging level (`debug`, `info`, `warn`, `error`) |
+| `RATE_LIMIT_CREATE_PER_MIN` | `10` | Per-IP rate limit for secret creation (`POST /`), req/min; `0` = disabled |
+| `RATE_LIMIT_REVEAL_PER_MIN` | `20` | Per-IP rate limit for secret reveal (`POST /s/{token}/reveal`), req/min; `0` = disabled |
+| `RATE_LIMIT_HEALTH_PER_MIN` | `5` | Per-IP rate limit for admin `/health` endpoints, req/min; `0` = disabled |
+| `TRUST_PROXY` | `false` | When `true`, reads client IP from `X-Forwarded-For` (use only behind a trusted reverse proxy) |
+| `LOG_DB_MIN_LEVEL` | `warn` | Minimum slog level written to the `app_logs` DB table (`debug`, `info`, `warn`, `error`) |
+| `ADMIN_USER` | *(empty)* | Admin username for `/health` HTTP Basic Auth; both must be set to enable the admin interface |
+| `ADMIN_PASSWORD` | *(empty)* | Admin password for `/health` HTTP Basic Auth |
 
 ---
 
@@ -136,8 +149,9 @@ disapyr-link/
 │   ├── config/          # Environment variable parsing
 │   ├── db/
 │   │   ├── db.go        # pgx connection pool
-│   │   └── migrations/  # SQL schema (001_init.sql)
-│   ├── handler/         # HTTP handlers, CSP headers, template rendering
+│   │   └── migrations/  # SQL schema (001_init.sql, 002_app_logs.sql)
+│   ├── handler/         # HTTP handlers, CSP headers, rate limiter, admin interface
+│   ├── logger/          # DB log handler — fans out slog records to stdout + app_logs table
 │   ├── model/           # Domain types (Secret, CreateSecretInput)
 │   ├── repository/      # Database access (Store, FetchAndDelete)
 │   └── service/         # Business logic (Create, Retrieve, token generation)
@@ -147,11 +161,14 @@ disapyr-link/
     │   └── js/
     │       ├── crypto.js        # AES-GCM encrypt/decrypt, file validation, drag-drop, copy
     │       ├── effects.js       # UI effects, theme toggle state machine
+    │       ├── htmx.min.js      # htmx (used for admin log browser partial updates)
     │       └── theme-init.js    # Synchronous FOUC-prevention script (no defer)
     └── templates/
-        ├── base.html            # Shared layout, nav, theme controls
-        ├── index.html           # Secret creation form
-        └── retrieve.html        # Reveal / download page
+        ├── base.html                    # Shared layout, nav, theme controls
+        ├── health.html                  # Admin status + log browser page
+        ├── health_logs_partial.html     # HTMX partial for log filtering/pagination
+        ├── index.html                   # Secret creation form
+        └── retrieve.html                # Reveal / download page
 ```
 
 ---
@@ -173,15 +190,37 @@ The `ciphertext` contains an encrypted envelope of `{content_type, filename}` JS
 
 ---
 
+## `app_logs` schema
+
+Application log records written by the structured logger (levels at or above `LOG_DB_MIN_LEVEL`):
+
+```sql
+CREATE TABLE app_logs (
+    id     BIGSERIAL    PRIMARY KEY,
+    ts     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    level  TEXT         NOT NULL,
+    msg    TEXT         NOT NULL,
+    attrs  JSONB
+);
+```
+
+Indexed on `ts DESC` and `level` for the admin log browser queries. Applied by `002_app_logs.sql`.
+
+---
+
 ## API
 
-The application exposes only two endpoints beyond static files:
+The application exposes the following endpoints beyond static files:
 
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/` | Secret creation form |
-| `POST` | `/` | Submit encrypted secret; returns JSON `{"token":"…"}` |
+| `POST` | `/` | Submit encrypted secret; returns JSON `{"token":"…"}` (rate limited) |
 | `GET` | `/s/{token}` | Retrieve page (serves ciphertext to browser for decryption) |
+| `POST` | `/s/{token}/reveal` | Fetch-and-delete the encrypted payload; browser decrypts it client-side (rate limited) |
+| `GET` | `/health` | Admin status page + log browser (HTTP Basic Auth required) |
+| `GET` | `/health/logs` | HTMX partial for log filtering and pagination (Basic Auth required) |
+| `POST` | `/health/logs/clear` | Delete application logs, optionally filtered by age (Basic Auth required) |
 
 ---
 
@@ -193,6 +232,14 @@ go build -o disapyr ./cmd/server
 
 # Build Docker image
 docker build -t disapyr-link .
+```
+
+The server accepts a `--print-config` flag to print the resolved configuration (with sensitive values redacted) and exit:
+
+```bash
+./disapyr --print-config
+# or without building:
+go run ./cmd/server --print-config
 ```
 
 ---
