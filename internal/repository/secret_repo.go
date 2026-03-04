@@ -40,6 +40,8 @@ func (r *SecretRepository) Store(ctx context.Context, token string, input model.
 	if err != nil {
 		return fmt.Errorf("insert secret: %w", err)
 	}
+
+	r.recordEvent(ctx, "created", 1)
 	return nil
 }
 
@@ -64,5 +66,33 @@ func (r *SecretRepository) FetchAndDelete(ctx context.Context, token string) (*m
 		return nil, fmt.Errorf("fetch and delete secret: %w", err)
 	}
 
+	r.recordEvent(ctx, "retrieved", 1)
 	return &s, nil
 }
+
+// CleanupExpired deletes all secrets whose expiry time has passed and records
+// the count as an "expired" event. Returns the number of secrets deleted and
+// any error encountered. Event recording is best-effort and never causes the
+// error return to be set. It is intended to be called from a background goroutine.
+func (r *SecretRepository) CleanupExpired(ctx context.Context) (int64, error) {
+	tag, err := r.db.Exec(ctx, `DELETE FROM secrets WHERE expires_at IS NOT NULL AND expires_at < NOW()`)
+	if err != nil {
+		return 0, fmt.Errorf("cleanup expired secrets: %w", err)
+	}
+	n := tag.RowsAffected()
+	if n > 0 {
+		r.recordEvent(ctx, "expired", n)
+	}
+	return n, nil
+}
+
+// recordEvent inserts a lifecycle event into secret_events on a best-effort basis.
+// Errors are silently discarded so that a stats write failure never interrupts the
+// critical secret creation or retrieval path.
+func (r *SecretRepository) recordEvent(ctx context.Context, eventType string, count int64) {
+	_, _ = r.db.Exec(ctx,
+		`INSERT INTO secret_events (event_type, count) VALUES ($1, $2)`,
+		eventType, count,
+	)
+}
+

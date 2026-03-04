@@ -98,6 +98,11 @@ type healthData struct {
 	LogSummary  []logLevelCount
 	InitialLogs []logRow
 	TotalLogs   int
+
+	// Secret activity counters (all-time totals from secret_events).
+	SecretsCreated   int64
+	SecretsRetrieved int64
+	SecretsExpired   int64
 }
 
 type logLevelCount struct {
@@ -141,6 +146,9 @@ func (a *AdminHandler) ServeHealth(w http.ResponseWriter, r *http.Request) {
 
 	// Log summary (last 24 h).
 	data.LogSummary = a.queryLogSummary(ctx)
+
+	// Secret activity stats (all-time totals).
+	data.SecretsCreated, data.SecretsRetrieved, data.SecretsExpired = a.querySecretStats(ctx)
 
 	// Initial log rows (page 1, no filter).
 	data.InitialLogs, data.TotalLogs = a.queryLogs(ctx, "", "24h", 0)
@@ -317,6 +325,41 @@ func humanWindow(window string) string {
 }
 
 // ─── DB queries ───────────────────────────────────────────────────────────────
+
+// querySecretStats returns all-time totals for created, retrieved, and expired
+// secret events. Errors are silently swallowed — the health page renders with
+// zero counts rather than failing.
+func (a *AdminHandler) querySecretStats(ctx context.Context) (created, retrieved, expired int64) {
+	rows, err := a.pool.Query(ctx,
+		`SELECT event_type, COALESCE(SUM(count), 0)
+		 FROM secret_events
+		 GROUP BY event_type`)
+	if err != nil {
+		a.log.Warn("querySecretStats", "error", err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var eventType string
+		var total int64
+		if err := rows.Scan(&eventType, &total); err != nil {
+			continue
+		}
+		switch eventType {
+		case "created":
+			created = total
+		case "retrieved":
+			retrieved = total
+		case "expired":
+			expired = total
+		}
+	}
+	if err := rows.Err(); err != nil {
+		a.log.Warn("querySecretStats iteration", "error", err)
+	}
+	return
+}
 
 func (a *AdminHandler) queryLogSummary(ctx context.Context) []logLevelCount {
 	const q = `

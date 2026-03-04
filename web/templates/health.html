@@ -47,6 +47,30 @@
 
   </div>
 
+  {{/* ── Secret activity ─────────────────────────────────────────── */}}
+  <p class="log-section__title">Secret activity</p>
+  <div class="health-grid" style="margin-bottom: 2rem;">
+
+    <div class="stat-card stat-card--ok">
+      <span class="stat-card__label">Created</span>
+      <span class="stat-card__value">{{.SecretsCreated}}</span>
+      <span class="stat-card__sub">all time</span>
+    </div>
+
+    <div class="stat-card stat-card--ok">
+      <span class="stat-card__label">Retrieved</span>
+      <span class="stat-card__value">{{.SecretsRetrieved}}</span>
+      <span class="stat-card__sub">all time</span>
+    </div>
+
+    <div class="stat-card stat-card--warn">
+      <span class="stat-card__label">Expired</span>
+      <span class="stat-card__value">{{.SecretsExpired}}</span>
+      <span class="stat-card__sub">all time</span>
+    </div>
+
+  </div>
+
   {{/* ── Log level summary (last 24 h) ──────────────────────────── */}}
   {{if .LogSummary}}
   <p class="log-section__title">Log events — last 24 h</p>

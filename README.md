@@ -48,7 +48,7 @@ https://your-domain/s/{token}#key={base64url-key}
 - **Destruction confirmation** — "This secret has been destroyed" shown after retrieval
 - **Configurable size limit** — default 10 MB, set via `MAX_SECRET_BYTES`
 - **Per-IP rate limiting** — token-bucket limiter on write and admin endpoints; configurable per route with `Retry-After` response headers
-- **Admin `/health` page** — system status (uptime, DB pool stats) and paginated log browser; disabled by default, enabled with `ADMIN_USER` + `ADMIN_PASSWORD`
+- **Admin `/health` page** — system status (uptime, DB pool stats), secret activity counters, and paginated log browser; disabled by default, enabled with `ADMIN_USER` + `ADMIN_PASSWORD`
 - **Application log persistence** — structured logs at or above `LOG_DB_MIN_LEVEL` are written to the `app_logs` DB table and browsable from the admin page
 - **Background expiry cleanup** — a goroutine runs every 15 minutes to hard-delete expired secrets from the database
 
@@ -109,9 +109,10 @@ cp .env.example .env
 # Edit DATABASE_URL if needed, e.g.:
 # DATABASE_URL=postgres://disapyr:disapyr@localhost:5432/disapyr?sslmode=disable
 
-# 3. Apply the schema (two migrations)
+# 3. Apply the schema (three migrations)
 psql "$DATABASE_URL" -f internal/db/migrations/001_init.sql
 psql "$DATABASE_URL" -f internal/db/migrations/002_app_logs.sql
+psql "$DATABASE_URL" -f internal/db/migrations/003_secret_events.sql
 
 # 4. Run
 go run ./cmd/server
@@ -149,7 +150,7 @@ disapyr-link/
 │   ├── config/          # Environment variable parsing
 │   ├── db/
 │   │   ├── db.go        # pgx connection pool
-│   │   └── migrations/  # SQL schema (001_init.sql, 002_app_logs.sql)
+│   │   └── migrations/  # SQL schema (001_init.sql, 002_app_logs.sql, 003_secret_events.sql)
 │   ├── handler/         # HTTP handlers, CSP headers, rate limiter, admin interface
 │   ├── logger/          # DB log handler — fans out slog records to stdout + app_logs table
 │   ├── model/           # Domain types (Secret, CreateSecretInput)
@@ -205,6 +206,23 @@ CREATE TABLE app_logs (
 ```
 
 Indexed on `ts DESC` and `level` for the admin log browser queries. Applied by `002_app_logs.sql`.
+
+---
+
+## `secret_events` schema
+
+Tracks secret lifecycle events for the health page activity counters:
+
+```sql
+CREATE TABLE secret_events (
+    id         BIGSERIAL    PRIMARY KEY,
+    event_type TEXT         NOT NULL CHECK (event_type IN ('created', 'retrieved', 'expired')),
+    count      BIGINT       NOT NULL DEFAULT 1,
+    ts         TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+```
+
+`count > 1` is used by batch expiry cleanup runs so one row is emitted per cleanup cycle rather than one row per expired secret. Applied by `003_secret_events.sql`.
 
 ---
 

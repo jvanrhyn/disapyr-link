@@ -85,8 +85,8 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				if _, err := pool.Exec(ctx, `DELETE FROM secrets WHERE expires_at IS NOT NULL AND expires_at < NOW()`); err != nil {
-					log.Warn("expired secret cleanup", "err", err)
+				if _, err := repo.CleanupExpired(ctx); err != nil {
+					log.Warn("expired secret cleanup failed", "err", err)
 				}
 			case <-ctx.Done():
 				return
