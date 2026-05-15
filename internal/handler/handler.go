@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/jvanrhyn/disapyr-link/internal/model"
 	"github.com/jvanrhyn/disapyr-link/internal/service"
@@ -153,7 +154,64 @@ func (h *Handler) RevealSecret(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Middleware wraps an http.Handler with request logging, security headers, and panic recovery.
+// isProbeRequest detects common vulnerability scanning patterns:
+// - git metadata paths (/.git/*)
+// - site discovery files (robots.txt, sitemap.xml, etc.)
+// - WordPress/plugin paths
+// - common scanner fingerprints
+func isProbeRequest(path string) bool {
+	lowerPath := strings.ToLower(path)
+
+	// Git metadata
+	if strings.HasPrefix(lowerPath, "/.git") || strings.Contains(lowerPath, "/.git/") {
+		return true
+	}
+
+	// Common site discovery files
+	probePatterns := []string{
+		"/robots.txt",
+		"/sitemap.xml",
+		"/favicon.ico",
+		"/.well-known/",
+		"/wp-json/",
+		"/wp-admin",
+		"/wp-content",
+		"/.env",
+		"/.env.local",
+		"/web.config",
+		"/config.php",
+		"/settings.php",
+		"/.htaccess",
+		"/xmlrpc.php",
+		"/.github",
+		"/.gitlab",
+		"/.hg",
+		"/.svn",
+		"/app.py",
+		"/main.py",
+		"/index.php",
+		"/config.json",
+		"/version.txt",
+		"/api/",
+		"/admin",
+		"/backup",
+		"/uploads",
+		"/images",
+		"/assets",
+		"/__pycache__",
+		"/node_modules",
+	}
+
+	for _, pattern := range probePatterns {
+		if strings.EqualFold(lowerPath, pattern) || strings.HasPrefix(lowerPath, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Middleware wraps an http.Handler with request logging, security headers, panic recovery, and probe blocking.
 func Middleware(log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -165,6 +223,12 @@ func Middleware(log *slog.Logger) func(http.Handler) http.Handler {
 			// Restrict script/style to same-origin; deny framing; no external resources.
 			w.Header().Set("Content-Security-Policy",
 				"default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';")
+
+			// Block vulnerability probes with 418 I'm a Teapot and don't log them
+			if isProbeRequest(r.URL.Path) {
+				w.WriteHeader(http.StatusTeapot) // 418
+				return
+			}
 
 			defer func() {
 				if rec := recover(); rec != nil {
