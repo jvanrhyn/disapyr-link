@@ -224,8 +224,9 @@ func Middleware(log *slog.Logger) func(http.Handler) http.Handler {
 			w.Header().Set("Content-Security-Policy",
 				"default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';")
 
-			// Block vulnerability probes with 418 I'm a Teapot and don't log them
+			// Block vulnerability probes with 418 I'm a Teapot
 			if isProbeRequest(r.URL.Path) {
+				log.Warn("probe request blocked", "method", r.Method, "path", r.URL.Path, "remote", r.RemoteAddr)
 				w.WriteHeader(http.StatusTeapot) // 418
 				return
 			}
