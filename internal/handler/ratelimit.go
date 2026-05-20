@@ -21,26 +21,28 @@ type ipLimiter struct {
 
 // RateLimiter manages per-IP token buckets for a single route tier.
 type RateLimiter struct {
-	mu         sync.Mutex
-	limiters   map[string]*ipLimiter
-	r          rate.Limit // tokens per second
-	burst      int
-	perMinute  int // stored for Retry-After header calculation
-	trustProxy bool
-	log        *slog.Logger
+	mu                  sync.Mutex
+	limiters            map[string]*ipLimiter
+	r                   rate.Limit // tokens per second
+	burst               int
+	perMinute           int // stored for Retry-After header calculation
+	trustProxy          bool
+	trustedProxiesCount int
+	log                 *slog.Logger
 }
 
 // NewRateLimiter creates a RateLimiter and starts a background cleanup goroutine.
 // perMinute is the sustained request rate; burst allows short spikes above that rate.
 // Set perMinute to 0 to disable rate limiting entirely.
-func NewRateLimiter(perMinute int, burst int, trustProxy bool, log *slog.Logger) *RateLimiter {
+func NewRateLimiter(perMinute int, burst int, trustProxy bool, trustedProxiesCount int, log *slog.Logger) *RateLimiter {
 	rl := &RateLimiter{
-		limiters:   make(map[string]*ipLimiter),
-		r:          rate.Limit(float64(perMinute) / 60.0),
-		burst:      burst,
-		perMinute:  perMinute,
-		trustProxy: trustProxy,
-		log:        log,
+		limiters:            make(map[string]*ipLimiter),
+		r:                   rate.Limit(float64(perMinute) / 60.0),
+		burst:               burst,
+		perMinute:           perMinute,
+		trustProxy:          trustProxy,
+		trustedProxiesCount: trustedProxiesCount,
+		log:                 log,
 	}
 	go rl.cleanup()
 	return rl
@@ -98,26 +100,22 @@ func (rl *RateLimiter) cleanup() {
 }
 
 // clientIP extracts the request originator IP.
-// When trustProxy is true it reads X-Forwarded-For; taking the last entry is safer than the first
-// because well-behaved reverse proxies append the connecting IP — an attacker can only forge entries
-// before the proxy's own append, so the last value is controlled by the trusted proxy.
+// When trustProxy is true it reads X-Forwarded-For, traversing back from the right
+// by trustedProxiesCount hops to locate the client-controlled IP.
 func (rl *RateLimiter) clientIP(r *http.Request) string {
 	if rl.trustProxy {
 		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			// Take the last comma-separated value (proxy-appended, not client-controlled).
-			last := xff
-			if idx := len(xff) - 1; idx >= 0 {
-				for i := len(xff) - 1; i >= 0; i-- {
-					if xff[i] == ',' {
-						last = xff[i+1:]
-						break
-					}
-				}
+			parts := strings.Split(xff, ",")
+			hops := rl.trustedProxiesCount
+			if hops <= 0 {
+				hops = 1
 			}
-			// Trim whitespace and validate.
-			last = strings.TrimSpace(last)
-			if ip := net.ParseIP(last); ip != nil {
-				return ip.String()
+			idx := len(parts) - hops
+			if idx >= 0 {
+				ipStr := strings.TrimSpace(parts[idx])
+				if ip := net.ParseIP(ipStr); ip != nil {
+					return ip.String()
+				}
 			}
 		}
 	}

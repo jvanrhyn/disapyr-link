@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"html/template"
 	"io/fs"
@@ -75,7 +77,15 @@ func (a *AdminHandler) BasicAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		user, pass, ok := r.BasicAuth()
-		if !ok || user != a.adminUser || pass != a.adminPass {
+		userHash := sha256.Sum256([]byte(user))
+		expectedUserHash := sha256.Sum256([]byte(a.adminUser))
+		passHash := sha256.Sum256([]byte(pass))
+		expectedPassHash := sha256.Sum256([]byte(a.adminPass))
+
+		userMatch := subtle.ConstantTimeCompare(userHash[:], expectedUserHash[:]) == 1
+		passMatch := subtle.ConstantTimeCompare(passHash[:], expectedPassHash[:]) == 1
+
+		if !ok || !userMatch || !passMatch {
 			w.Header().Set("WWW-Authenticate", `Basic realm="disapyr-admin"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

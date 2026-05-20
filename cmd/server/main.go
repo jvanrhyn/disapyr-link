@@ -95,9 +95,9 @@ func main() {
 	}()
 
 	// Router (Go 1.22+ pattern matching).
-	createLimiter := handler.NewRateLimiter(cfg.RateLimitCreatePerMin, 5, cfg.TrustProxy, log)
-	revealLimiter := handler.NewRateLimiter(cfg.RateLimitRevealPerMin, 10, cfg.TrustProxy, log)
-	healthLimiter := handler.NewRateLimiter(cfg.RateLimitHealthPerMin, 3, cfg.TrustProxy, log)
+	createLimiter := handler.NewRateLimiter(cfg.RateLimitCreatePerMin, 5, cfg.TrustProxy, cfg.TrustedProxiesCount, log)
+	revealLimiter := handler.NewRateLimiter(cfg.RateLimitRevealPerMin, 10, cfg.TrustProxy, cfg.TrustedProxiesCount, log)
+	healthLimiter := handler.NewRateLimiter(cfg.RateLimitHealthPerMin, 3, cfg.TrustProxy, cfg.TrustedProxiesCount, log)
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS(web.FS)))))
