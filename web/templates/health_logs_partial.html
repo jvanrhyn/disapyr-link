@@ -13,7 +13,7 @@
         <summary>attrs</summary>
         <pre class="log-attrs-pre">{{.Attrs}}</pre>
       </details>
-      {{else}}<span style="color:var(--text-3)">—</span>{{end}}
+      {{else}}<span class="text-muted-dim">—</span>{{end}}
     </td>
   </tr>
   {{end}}
@@ -38,26 +38,24 @@
 <div id="log-pagination" hx-swap-oob="true" class="log-pagination">
   <span class="log-page-info">Page {{.Page}} · {{.Total}} total</span>
   {{if gt .Page 0}}
-  <button class="btn btn-ghost"
+  <button class="btn btn-ghost btn-font-sm"
           hx-get="/health/logs"
           hx-target="#log-body"
           hx-swap="innerHTML"
           hx-include="[name='level'],[name='window']"
           hx-vals='{"page":"{{.PrevPage}}"}'
-          hx-indicator="#log-spinner"
-          style="font-size:0.78rem;">
+          hx-indicator="#log-spinner">
     ← Prev
   </button>
   {{end}}
   {{if .HasMore}}
-  <button class="btn btn-ghost"
+  <button class="btn btn-ghost btn-font-sm"
           hx-get="/health/logs"
           hx-target="#log-body"
           hx-swap="innerHTML"
           hx-include="[name='level'],[name='window']"
           hx-vals='{"page":"{{.NextPage}}"}'
-          hx-indicator="#log-spinner"
-          style="font-size:0.78rem;">
+          hx-indicator="#log-spinner">
     Next →
   </button>
   {{end}}

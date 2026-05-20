@@ -211,6 +211,19 @@ func isProbeRequest(path string) bool {
 	return false
 }
 
+// maskTokenInPath replaces the token segment in request paths matching /s/{token} or /s/{token}/... with [token] to prevent token exposure in database logs.
+func maskTokenInPath(path string) string {
+	if !strings.HasPrefix(path, "/s/") {
+		return path
+	}
+	parts := strings.Split(path, "/")
+	if len(parts) >= 3 && parts[2] != "" {
+		parts[2] = "[token]"
+		return strings.Join(parts, "/")
+	}
+	return path
+}
+
 // Middleware wraps an http.Handler with request logging, security headers, panic recovery, and probe blocking.
 func Middleware(log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -220,9 +233,10 @@ func Middleware(log *slog.Logger) func(http.Handler) http.Handler {
 			w.Header().Set("X-Frame-Options", "DENY")
 			w.Header().Set("Referrer-Policy", "no-referrer")
 			w.Header().Set("Permissions-Policy", "interest-cohort=()")
+			w.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
 			// Restrict script/style to same-origin; deny framing; no external resources.
 			w.Header().Set("Content-Security-Policy",
-				"default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';")
+				"default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';")
 
 			// Block vulnerability probes with 418 I'm a Teapot
 			if isProbeRequest(r.URL.Path) {
@@ -231,14 +245,16 @@ func Middleware(log *slog.Logger) func(http.Handler) http.Handler {
 				return
 			}
 
+			maskedPath := maskTokenInPath(r.URL.Path)
+
 			defer func() {
 				if rec := recover(); rec != nil {
-					log.Error("panic recovered", "panic", rec, "path", r.URL.Path)
+					log.Error("panic recovered", "panic", rec, "path", maskedPath)
 					http.Error(w, "internal server error", http.StatusInternalServerError)
 				}
 			}()
 
-			log.Info("request", "method", r.Method, "path", r.URL.Path, "remote", r.RemoteAddr)
+			log.Info("request", "method", r.Method, "path", maskedPath, "remote", r.RemoteAddr)
 			next.ServeHTTP(w, r)
 		})
 	}

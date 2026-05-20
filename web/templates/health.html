@@ -9,7 +9,7 @@
 {{define "content"}}
 <div class="card card--wide animate-up">
 
-  <div class="card-header" style="margin-bottom: 1.75rem;">
+  <div class="card-header health-header">
     <div class="card-icon {{if eq .DBStatus "healthy"}}success{{else}}gone{{end}}">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
         <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
@@ -34,8 +34,8 @@
         <span class="stat-card__value">● Healthy</span>
         <span class="stat-card__sub">{{.DBTotalConn}} / {{.DBMaxConn}} conns · {{.DBIdleConn}} idle</span>
       {{else}}
-        <span class="stat-card__value" style="color:var(--error)">✕ Unhealthy</span>
-        <span class="stat-card__sub" style="color:var(--error); word-break:break-all">{{.DBError}}</span>
+        <span class="stat-card__value db-unhealthy-val">✕ Unhealthy</span>
+        <span class="stat-card__sub db-unhealthy-sub">{{.DBError}}</span>
       {{end}}
     </div>
 
@@ -49,7 +49,7 @@
 
   {{/* ── Secret activity ─────────────────────────────────────────── */}}
   <p class="log-section__title">Secret activity</p>
-  <div class="health-grid" style="margin-bottom: 2rem;">
+  <div class="health-grid health-mb-2">
 
     <div class="stat-card stat-card--ok">
       <span class="stat-card__label">Created</span>
@@ -74,7 +74,7 @@
   {{/* ── Log level summary (last 24 h) ──────────────────────────── */}}
   {{if .LogSummary}}
   <p class="log-section__title">Log events — last 24 h</p>
-  <div class="level-summary" style="margin-bottom: 2rem;">
+  <div class="level-summary health-mb-2">
     {{range .LogSummary}}
     <span class="level-badge level-badge--{{.LevelClass}}">
       {{.Level}} <strong>{{.Count}}</strong>
@@ -112,7 +112,7 @@
       <option value="7d">Last 7 days</option>
     </select>
 
-    <span id="log-spinner" class="htmx-indicator" style="font-size:0.72rem; color:var(--text-3); font-family:var(--mono);">
+    <span id="log-spinner" class="htmx-indicator spinner-label">
       Loading…
     </span>
 
@@ -122,7 +122,7 @@
   {{/* ── Clear logs toolbar ───────────────────────────────────────── */}}
   <div class="log-clear-bar">
     <span class="log-section__label">Clear logs:</span>
-    <select name="older_than" id="older-than-select" class="select" aria-label="Clear scope" style="max-width:190px;">
+    <select name="older_than" id="older-than-select" class="select select-clear-scope" aria-label="Clear scope">
       <option value="">All logs</option>
       <option value="1h">Older than 1 hour</option>
       <option value="6h">Older than 6 hours</option>
@@ -163,14 +163,13 @@
   <div class="log-pagination" id="log-pagination">
     <span class="log-page-info">Showing up to 50 per page</span>
     {{if gt .TotalLogs 50}}
-    <button class="btn btn-ghost"
+    <button class="btn btn-ghost btn-font-sm"
             hx-get="/health/logs"
             hx-target="#log-body"
             hx-swap="innerHTML"
             hx-include="[name='level'],[name='window']"
             hx-vals='{"page":"1"}'
-            hx-indicator="#log-spinner"
-            style="font-size:0.78rem;">
+            hx-indicator="#log-spinner">
       Next page →
     </button>
     {{end}}
@@ -195,7 +194,7 @@
         <summary>attrs</summary>
         <pre class="log-attrs-pre">{{.Attrs}}</pre>
       </details>
-      {{else}}<span style="color:var(--text-3)">—</span>{{end}}
+      {{else}}<span class="text-muted-dim">—</span>{{end}}
     </td>
   </tr>
   {{end}}

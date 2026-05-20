@@ -23,7 +23,8 @@ type Config struct {
 
 	// TrustProxy, when true, reads the client IP from X-Forwarded-For.
 	// Only enable this when the app is behind a trusted reverse proxy.
-	TrustProxy bool
+	TrustProxy          bool
+	TrustedProxiesCount int
 
 	// LogDBMinLevel is the minimum slog level written to the app_logs DB table.
 	// Valid values: "debug", "info", "warn", "error". Default: "warn".
@@ -60,6 +61,7 @@ func Load() Config {
 		RateLimitRevealPerMin: revealRate,
 		RateLimitHealthPerMin: healthRate,
 		TrustProxy:            getEnv("TRUST_PROXY", "") == "true",
+		TrustedProxiesCount:   getEnvInt("TRUSTED_PROXIES_COUNT", 1),
 		LogDBMinLevel:         getEnv("LOG_DB_MIN_LEVEL", "warn"),
 		AdminUser:             getEnv("ADMIN_USER", ""),
 		AdminPassword:         getEnv("ADMIN_PASSWORD", ""),
@@ -105,6 +107,7 @@ func (c Config) Print(w io.Writer) {
 	fmt.Fprintf(w, "RATE_LIMIT_REVEAL_PER_MIN = %d\n", c.RateLimitRevealPerMin)
 	fmt.Fprintf(w, "RATE_LIMIT_HEALTH_PER_MIN = %d\n", c.RateLimitHealthPerMin)
 	fmt.Fprintf(w, "TRUST_PROXY            = %v\n", c.TrustProxy)
+	fmt.Fprintf(w, "TRUSTED_PROXIES_COUNT  = %d\n", c.TrustedProxiesCount)
 	fmt.Fprintf(w, "ADMIN_USER             = %s\n", c.AdminUser)
 	if c.AdminPassword != "" {
 		fmt.Fprintf(w, "ADMIN_PASSWORD         = ****\n")
