@@ -135,6 +135,7 @@ All configuration is via environment variables (`.env` file or shell):
 | `RATE_LIMIT_REVEAL_PER_MIN` | `20` | Per-IP rate limit for secret reveal (`POST /s/{token}/reveal`), req/min; `0` = disabled |
 | `RATE_LIMIT_HEALTH_PER_MIN` | `5` | Per-IP rate limit for admin `/health` endpoints, req/min; `0` = disabled |
 | `TRUST_PROXY` | `false` | When `true`, reads client IP from `X-Forwarded-For` (use only behind a trusted reverse proxy) |
+| `TRUSTED_PROXIES_COUNT` | `1` | Number of trusted proxies in front of the application to skip when parsing `X-Forwarded-For` |
 | `LOG_DB_MIN_LEVEL` | `warn` | Minimum slog level written to the `app_logs` DB table (`debug`, `info`, `warn`, `error`) |
 | `ADMIN_USER` | *(empty)* | Admin username for `/health` HTTP Basic Auth; both must be set to enable the admin interface |
 | `ADMIN_PASSWORD` | *(empty)* | Admin password for `/health` HTTP Basic Auth |
@@ -159,6 +160,7 @@ disapyr-link/
 └── web/
     ├── static/
     │   ├── css/style.css        # Design system — light/dark tokens, component styles
+    │   ├── fonts/               # JetBrains Mono and Syne web fonts
     │   └── js/
     │       ├── crypto.js        # AES-GCM encrypt/decrypt, file validation, drag-drop, copy
     │       ├── effects.js       # UI effects, theme toggle state machine
@@ -266,7 +268,7 @@ go run ./cmd/server --print-config
 
 The following file extensions are rejected client-side before encryption:
 
-`exe` `msi` `bat` `cmd` `com` `pif` `scr` `vbs` `vbe` `wsh` `wsf` `ps1` `ps2` `jar` `app` `dmg` `pkg` `command` `sh` `run`
+`exe` `msi` `bat` `cmd` `com` `pif` `scr` `vbs` `vbe` `wsh` `wsf` `ps1` `ps2` `ps1xml` `ps2xml` `psc1` `psc2` `jar` `app` `dmg` `pkg` `command` `sh` `run`
 
 ---
 
